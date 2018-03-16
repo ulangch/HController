@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <SwitchPreference
+        android:key="pref_start_scan"
+        android:title="@string/title_start_scan"/>
+    <PreferenceCategory
+        android:key="category_connected_devices"
+        android:title="@string/category_connected_devices">
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_available_devices"
+        android:title="@string/title_available_devices">
+    </PreferenceCategory>
+</PreferenceScreen>

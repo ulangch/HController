@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory
+        android:key="category_connected_devices"
+        android:title="@string/category_connected_devices">
+
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/category_functions">
+        <Preference
+            android:key="pref_connect_device"
+            android:title="@string/title_connect_device"
+            android:summary="@string/summary_connect_device"/>
+        <EditTextPreference
+            android:key="pref_device_parameter"
+            android:title="@string/title_modify_device_parameter"
+            android:summary="@string/summary_modify_device_parameter"
+            android:maxLength="6"/>
+        <EditTextPreference
+            android:key="pref_adjust_strength"
+            android:title="@string/title_adjust_strength"
+            android:summary="@string/summary_adjust_strength"
+            android:maxLength="6"/>
+        <EditTextPreference
+            android:key="pref_send_order"
+            android:title="@string/title_send_order"
+            android:summary="@string/summary_receive_sensor_data"
+            android:maxLength="4"/>
+        <Preference
+            android:key="pref_pwm"
+            android:title="@string/title_pwm"
+            android:summary="@string/summary_pwm"/>
+        <Preference
+            android:key="pref_sensor_data"
+            android:title="@string/title_receive_sensor_data"
+            android:summary="@string/summary_receive_sensor_data"/>
+        <EditTextPreference
+            android:key="pref_sensor_control"
+            android:title="@string/title_control_sensor"
+            android:summary="@string/summary_control_sensor"
+            android:maxLength="8"/>
+        <Preference
+            android:key="pref_sensor_info"
+            android:title="@string/title_receive_sensor_info"
+            android:summary="@string/summary_receive_sensor_info"/>
+        <EditTextPreference
+            android:key="pref_allocate_sensor"
+            android:title="@string/title_allocate_sensor_mac"
+            android:summary="@string/summary_allocate_sensor_mac"
+            android:maxLength="12"/>
+    </PreferenceCategory>
+</PreferenceScreen>

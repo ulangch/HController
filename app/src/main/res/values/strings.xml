@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">HController</string>
+
+    <string name="warning_ble_not_support">不支持BLE的设备</string>
+    <string name="warning_bt_not_support">不支持蓝牙的设备</string>
+
+    <string name="category_connected_devices">已连接设备</string>
+    <string name="category_functions">调试功能</string>
+    <string name="title_connect_device">连接设备</string>
+    <string name="summary_connect_device">获取设备ID和MAC</string>
+    <string name="title_modify_device_parameter">修改设备参数</string>
+    <string name="summary_modify_device_parameter">写PWM_AB1</string>
+    <string name="title_adjust_strength">修改强度调节速率</string>
+    <string name="summary_adjust_strength">写LEVEL_ADJ</string>
+    <string name="title_send_order">发出指令</string>
+    <string name="summary_send_order">写ORDER</string>
+    <string name="title_pwm">输出PWM</string>
+    <string name="summary_pwm">写PWM_A34/PWM_B34/PWM_AB2，接收PWM_AB2通知</string>
+    <string name="title_receive_sensor_data">接收传感器数据</string>
+    <string name="summary_receive_sensor_data">BLE_SENSOR_DATA通知</string>
+    <string name="title_control_sensor">控制传感器</string>
+    <string name="summary_control_sensor">写BLE_SENSOR_ORDER</string>
+    <string name="title_receive_sensor_info">接收传感器地址与类型</string>
+    <string name="summary_receive_sensor_info">UL_Allocation_MAC通知</string>
+    <string name="title_allocate_sensor_mac">分配传感器地址</string>
+    <string name="summary_allocate_sensor_mac">写DL_Allocation_MAC</string>
+
+    <string name="title_start_scan">开启扫描</string>
+    <string name="title_available_devices">可用设备</string>
+    <string name="scanning">正在扫描设备...</string>
+    <string name="scan_stopped">扫描已停止</string>
+    <string name="connecting">正在连接...</string>
+    <string name="disconnecting">正在断开...</string>
+    <string name="connect_success">恭喜，连接成功</string>
+    <string name="connect_failed">连接失败，已断开</string>
+
+    <string name="dlg_title_disconnect">断开连接</string>
+    <string name="dlg_msg_disconnect">是否确定要断开连接？</string>
+
+</resources>
