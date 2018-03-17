@@ -25,6 +25,11 @@
     <string name="title_allocate_sensor_mac">分配传感器地址</string>
     <string name="summary_allocate_sensor_mac">写DL_Allocation_MAC</string>
 
+    <string name="dlg_title_default_device">选择默认设备</string>
+    <string name="dlg_msg_default_device">是否将该设备作为默认的通信设备？</string>
+    <string name="default_device">(Default remote device)</string>
+    <string name="already_default_device">这个设备已经是默认的通信设备</string>
+
     <string name="title_start_scan">开启扫描</string>
     <string name="title_available_devices">可用设备</string>
     <string name="scanning">正在扫描设备...</string>

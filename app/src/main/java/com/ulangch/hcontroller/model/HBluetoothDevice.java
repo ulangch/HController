@@ -73,4 +73,15 @@ public class HBluetoothDevice {
     public boolean isConnected() {
         return state == BluetoothProfile.STATE_CONNECTED;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("HBluetoothDevice[address=");
+        sb.append(address);
+        sb.append(", state=");
+        sb.append(String.valueOf(state));
+        sb.append("]");
+        return sb.toString();
+    }
 }

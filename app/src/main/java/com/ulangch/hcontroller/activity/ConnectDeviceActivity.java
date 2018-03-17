@@ -69,12 +69,6 @@ public class ConnectDeviceActivity extends PreferenceActivity implements Prefere
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preference_device);
-        mScanPreference = (SwitchPreference) findPreference(PREFERENCE_START_SCAN);
-        mConnectedCategory = (PreferenceCategory) findPreference(CATEGORY_CONNECTED_DEVICES);
-        mAvailableCategory = (PreferenceCategory) findPreference(CATEGORY_AVAILABLE_DEVICES);
-        mScanPreference.setOnPreferenceClickListener(this);
-        mDevices = new HashMap<>();
-        mUiHandler = new UiHandler();
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             HUtils.showWarning(this, R.string.warning_ble_not_support);
             finish();
@@ -85,7 +79,12 @@ public class ConnectDeviceActivity extends PreferenceActivity implements Prefere
             HUtils.showWarning(this, R.string.warning_bt_not_support);
             finish();
         }
-        // Discovery broadcasts
+        mScanPreference = (SwitchPreference) findPreference(PREFERENCE_START_SCAN);
+        mConnectedCategory = (PreferenceCategory) findPreference(CATEGORY_CONNECTED_DEVICES);
+        mAvailableCategory = (PreferenceCategory) findPreference(CATEGORY_AVAILABLE_DEVICES);
+        mScanPreference.setOnPreferenceClickListener(this);
+        mDevices = new HashMap<>();
+        mUiHandler = new UiHandler();
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
@@ -142,6 +141,7 @@ public class ConnectDeviceActivity extends PreferenceActivity implements Prefere
     private synchronized void refresh() {
         HUtils.logD(TAG, "refresh, mRefreshed = " + mRefreshed);
         if (!mRefreshed) {
+            mHControllerService.registerCallback(this);
             List<BluetoothDevice> connDevices = mHControllerService.getConnectedDevices();
             HUtils.logD(TAG, "refresh, conn devices: " + connDevices);
             for (HBluetoothDevice hd : mDevices.values()) {
@@ -216,25 +216,27 @@ public class ConnectDeviceActivity extends PreferenceActivity implements Prefere
     }
 
     private void showDisconnectDialog(final Preference pref, final HBluetoothDevice device) {
-        HUtils.logD(TAG, "show disconnect dialog");
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.dlg_title_disconnect);
-        builder.setMessage(R.string.dlg_msg_disconnect);
-        builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
+        if (pref != null && device != null) {
+            HUtils.logD(TAG, "show disconnect dialog");
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.dlg_title_disconnect);
+            builder.setMessage(R.string.dlg_msg_disconnect);
+            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
                 /*pref.setSummary(R.string.disconnecting);
                 getListView().requestFocusFromTouch();
                 getListView().setSelection(0);*/
-                if (mBluetoothAdapter.isDiscovering()) {
-                    mBluetoothAdapter.cancelDiscovery();
+                    if (mBluetoothAdapter.isDiscovering()) {
+                        mBluetoothAdapter.cancelDiscovery();
+                    }
+                    mHControllerService.disconnect(device.getAddress());
+                    device.setState(BluetoothProfile.STATE_DISCONNECTING);
                 }
-                mHControllerService.disconnect(device.getAddress());
-                device.setState(BluetoothProfile.STATE_DISCONNECTING);
-            }
-        });
-        builder.setNegativeButton(android.R.string.cancel, null);
-        builder.show();
+            });
+            builder.setNegativeButton(android.R.string.cancel, null);
+            builder.show();
+        }
     }
 
     private void handleDeviceStateChanged(BluetoothDevice device, int state) {
@@ -345,6 +347,7 @@ public class ConnectDeviceActivity extends PreferenceActivity implements Prefere
         mBluetoothAdapter.cancelDiscovery();
         mScanPreference.setChecked(false);
         mRefreshed = false;
+        mHControllerService.unResgiterCallback(this);
     }
 
     @Override
@@ -359,14 +362,12 @@ public class ConnectDeviceActivity extends PreferenceActivity implements Prefere
     public void onServiceConnected(ComponentName componentName, IBinder service) {
         HUtils.logD(TAG, "service connected");
         mHControllerService = ((HControllerService.LocalBinder) service).getService();
-        mHControllerService.registerCallback(this);
         refresh();
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
         HUtils.logD(TAG, "service disconnected");
-        mHControllerService.unResgiterCallback(this);
     }
 
     @Override
