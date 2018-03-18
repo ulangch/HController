@@ -27,8 +27,11 @@
 
     <string name="dlg_title_default_device">选择默认设备</string>
     <string name="dlg_msg_default_device">是否将该设备作为默认的通信设备？</string>
+    <string name="discovering_service">(Service discovering...)</string>
     <string name="default_device">(Default remote device)</string>
     <string name="already_default_device">这个设备已经是默认的通信设备</string>
+    <string name="dlg_title_remote_services">可用服务</string>
+    <string name="invalid_text_message">不符合要求的数据</string>
 
     <string name="title_start_scan">开启扫描</string>
     <string name="title_available_devices">可用设备</string>

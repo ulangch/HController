@@ -3,6 +3,8 @@ package com.ulangch.hcontroller.activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.ComponentName;
@@ -30,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class MainActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener
         , Preference.OnPreferenceClickListener, ServiceConnection, HControllerService.ServiceCallback{
@@ -47,6 +50,7 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
     private static final String KEY_ALLOCATE_SENSOR = "pref_allocate_sensor";
 
     private static final int UHDL_DEVICE_STATE_CHANGED = 0x01;
+    private static final int UHDL_SERVICE_DISCOVERED = 0x02;
 
     private PreferenceCategory mConnectedCategory;
     private Preference mConnectPref;
@@ -114,7 +118,7 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
     public boolean onPreferenceChange(Preference preference, Object o) {
         String key = preference.getKey();
         if (TextUtils.equals(key, KEY_DEVICE_PARAMETER)) {
-
+            final String msg = (String) o;
         } else if (TextUtils.equals(key, KEY_ADJUST_STRENGTH)) {
 
         } else if (TextUtils.equals(key, KEY_SEND_ORDER)) {
@@ -143,7 +147,8 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
 
         } else if (HUtils.isAddress(key)) {
             if (mDefaultDevice != null && TextUtils.equals(key, mDefaultDevice.getAddress())) {
-                HUtils.showWarning(this, R.string.already_default_device);
+                // HUtils.showWarning(this, R.string.already_default_device);
+                displayRemoteServices(preference, mDefaultDevice);
             } else {
                 selectDefaultDevice(preference, mConnectedDevices.get(key));
             }
@@ -224,14 +229,40 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
                             old.setSummary(mDefaultDevice.getAddress());
                         }
                     }
-                    pref.setSummary(hDevice.getAddress() + " " + getString(R.string.default_device));
+                    pref.setSummary(hDevice.getAddress() + " " + getString(R.string.discovering_service));
                     mDefaultDevice = hDevice;
+                    mHControllerService.discoverServices(mDefaultDevice.getAddress());
                     getListView().requestFocusFromTouch();
                     //getListView().setSelection(0);
                 }
             });
             builder.setNegativeButton(android.R.string.cancel, null);
             builder.show();
+        }
+    }
+
+    private void displayRemoteServices(Preference pref, HBluetoothDevice hDevice) {
+        if (pref != null && hDevice != null) {
+            List<BluetoothGattService> gattServices = mHControllerService.getRemoteServices(hDevice.getAddress());
+            HUtils.logD(TAG, "display remote services, device: " + hDevice.getAddress() + ", result: " + gattServices);
+            if (gattServices != null && !gattServices.isEmpty()) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle(R.string.dlg_title_remote_services);
+                StringBuilder sb = new StringBuilder();
+                for (BluetoothGattService bgs : gattServices) {
+                    sb.append(bgs.getUuid()).append("\n");
+                    List<BluetoothGattCharacteristic> characteristics = bgs.getCharacteristics();
+                    for (BluetoothGattCharacteristic bgc : characteristics) {
+                        sb.append(bgc.getUuid()).append("\n");
+                    }
+                    sb.append("----------------------------------");
+                    sb.append("\n");
+                }
+                builder.setMessage(sb.toString());
+                builder.setPositiveButton(android.R.string.ok, null);
+                builder.setNegativeButton(android.R.string.cancel, null);
+                builder.show();
+            }
         }
     }
 
@@ -253,12 +284,25 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
         refreshUiForDeviceStateChanged(hDevice);
     }
 
+    private void handleServiceDiscovered(BluetoothDevice device, boolean success) {
+        if (mDefaultDevice != null && TextUtils.equals(mDefaultDevice.getAddress(), device.getAddress())) {
+            Preference pref = mConnectedCategory.findPreference(device.getAddress());
+            if (pref != null) {
+                pref.setSummary(device.getAddress() + " " + getString(R.string.default_device));
+                getListView().requestFocusFromTouch();
+            }
+        }
+    }
+
     private class UiHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case UHDL_DEVICE_STATE_CHANGED:
                     handleDeviceStateChanged((BluetoothDevice) msg.obj, msg.arg1);
+                    break;
+                case UHDL_SERVICE_DISCOVERED:
+                    handleServiceDiscovered((BluetoothDevice) msg.obj, msg.arg1 == 1);
                     break;
                 default:
                     break;
@@ -269,6 +313,12 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
     @Override
     public void onDeviceStateChanged(BluetoothDevice device, int state) {
         mUiHandler.sendMessage(mUiHandler.obtainMessage(UHDL_DEVICE_STATE_CHANGED, state, 0 , device));
+    }
+
+    @Override
+    public void onServicesDiscovered(BluetoothDevice device, boolean success) {
+        HUtils.logD(TAG, "services discovered, device: " + device + ", success: " + success);
+        mUiHandler.sendMessage(mUiHandler.obtainMessage(UHDL_SERVICE_DISCOVERED, success ? 1 : 0, 0, device));
     }
 
     @Override

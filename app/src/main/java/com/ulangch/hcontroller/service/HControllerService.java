@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
@@ -13,12 +15,14 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 
+import com.ulangch.hcontroller.utils.GattAttributes;
 import com.ulangch.hcontroller.utils.HUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by xyzc on 18-3-15.
@@ -26,6 +30,13 @@ import java.util.Map;
 
 public class HControllerService extends Service{
     private static final String TAG = "HControllerService";
+
+    private static final int SUCCESS = 1;
+    private static final int FAIL_UNKNOWN = -1;
+    private static final int FAIL_GATT_NULL = -2;
+    private static final int FAIL_SERVICE_NULL = -3;
+    private static final int FAIL_CHARACT_NULL = -4;
+    private static final int FAIL_PROPERTY_NULL = -5;
 
     private BluetoothManager mBtManager;
     private BluetoothAdapter mBtAdapter;
@@ -112,6 +123,82 @@ public class HControllerService extends Service{
         return true;
     }
 
+    public boolean discoverServices(String addr) {
+        HUtils.logD(TAG, "discover services, addr: " + addr);
+        BluetoothGatt gatt = mConnectedGatts.get(addr);
+        if (gatt != null) {
+            return gatt.discoverServices();
+        }
+        HUtils.logE(TAG, "discover services failed, no gatt for addr: " + addr);
+        return false;
+    }
+
+    public List<BluetoothGattService> getRemoteServices(String addr) {
+        BluetoothGatt gatt = mConnectedGatts.get(addr);
+        return gatt != null ? gatt.getServices() : null;
+    }
+
+    public int sendToRemoteService(String addr, String svcUUID, String charUUID, String message) {
+        BluetoothGatt gatt = mConnectedGatts.get(addr);
+        if (gatt == null) {
+            HUtils.logE(TAG, String.format("send failed for gatt null, [%s, %s, %s, %s]"
+                    , addr, svcUUID, charUUID, message));
+            return FAIL_GATT_NULL;
+        }
+        BluetoothGattService remote = gatt.getService(UUID.fromString(svcUUID));
+        if (remote == null) {
+            HUtils.logE(TAG, String.format("send failed for remote null, [%s, %s, %s, %s]"
+                    , addr, svcUUID, charUUID, message));
+            return FAIL_SERVICE_NULL;
+        }
+        BluetoothGattCharacteristic charact = remote.getCharacteristic(UUID.fromString(charUUID));
+        if (charact == null) {
+            HUtils.logE(TAG, String.format("send failed for charact null, [%s, %s, %s, %s]"
+                    , addr, svcUUID, charUUID, message));
+            return FAIL_CHARACT_NULL;
+        }
+        if (charact.setValue(HUtils.hexToBytes(message))) {
+            return SUCCESS;
+        } else {
+            return FAIL_UNKNOWN;
+        }
+    }
+
+    public int setCharacteristicNotification(String addr, String svcUUID, String charUUID) {
+        BluetoothGatt gatt = mConnectedGatts.get(addr);
+        if (gatt == null) {
+            HUtils.logE(TAG, String.format("notification failed for gatt null, [%s, %s, %s]"
+                    , addr, svcUUID, charUUID));
+            return FAIL_GATT_NULL;
+        }
+        BluetoothGattService remote = gatt.getService(UUID.fromString(svcUUID));
+        if (remote == null) {
+            HUtils.logE(TAG, String.format("notification failed for remote null, [%s, %s, %s]"
+                    , addr, svcUUID, charUUID));
+            return FAIL_SERVICE_NULL;
+        }
+        BluetoothGattCharacteristic charact = remote.getCharacteristic(UUID.fromString(charUUID));
+        if (charact == null) {
+            HUtils.logE(TAG, String.format("notification failed for charact null, [%s, %s, %s]"
+                    , addr, svcUUID, charUUID));
+            return FAIL_CHARACT_NULL;
+        }
+        byte[] value = null;
+        if ((charact.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0) {
+            value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE;
+        } else if ((charact.getProperties() & BluetoothGattCharacteristic.PROPERTY_INDICATE) != 0){
+            value = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE;
+        }
+        if (value != null) {
+            gatt.setCharacteristicNotification(charact, true);
+            BluetoothGattDescriptor descriptor = charact.getDescriptor(UUID.fromString(GattAttributes.UUID_CLIENT_CONFIG));
+            return descriptor.setValue(value) ? SUCCESS : FAIL_UNKNOWN;
+        }
+        HUtils.logE(TAG, String.format("notification failed for value null, [%s, %s, %s]"
+                , addr, svcUUID, charUUID));
+        return FAIL_PROPERTY_NULL;
+    }
+
     public List<BluetoothDevice> getConnectedDevices() {
         HUtils.logD(TAG, "get connected devices, mConnectedGatts: " + mConnectedGatts);
         List<BluetoothDevice> devices = new ArrayList<>();
@@ -155,7 +242,13 @@ public class HControllerService extends Service{
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            super.onServicesDiscovered(gatt, status);
+            BluetoothDevice device = gatt.getDevice();
+            HUtils.logD(TAG, "remote service discovered, device: " + device.getName() + ", status: " + status);
+            synchronized (mCallbacks) {
+                for (ServiceCallback c : mCallbacks) {
+                    c.onServicesDiscovered(device, (status == BluetoothGatt.GATT_SUCCESS));
+                }
+            }
         }
 
         @Override
@@ -171,5 +264,6 @@ public class HControllerService extends Service{
 
     public interface ServiceCallback {
         void onDeviceStateChanged(BluetoothDevice device, int state);
+        void onServicesDiscovered(BluetoothDevice device, boolean success);
     }
 }

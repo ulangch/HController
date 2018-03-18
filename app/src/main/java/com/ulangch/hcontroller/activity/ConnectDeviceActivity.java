@@ -377,6 +377,10 @@ public class ConnectDeviceActivity extends PreferenceActivity implements Prefere
     }
 
     @Override
+    public void onServicesDiscovered(BluetoothDevice device, boolean success) {
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_CANCELED) {
             ensureBtEnabled();
