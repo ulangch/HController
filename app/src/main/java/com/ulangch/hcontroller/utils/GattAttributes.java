@@ -28,4 +28,8 @@ public class GattAttributes {
     public static final String UUID_CHARACTER_150C = "0000150c-0000-1000-8000-00805f9b34fb";
 
     public static final String UUID_CLIENT_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+
+    /***************for test**************/
+    public static final String UUID_TEST_SERVICE_1801 = "0000f000-0000-1000-8000-00805f9b34fb";
+    public static final String UUID_TEST_CHARACTER_2A05 = "0000f001-0000-1000-8000-00805f9b34fb";
 }

@@ -31,12 +31,13 @@ import java.util.UUID;
 public class HControllerService extends Service{
     private static final String TAG = "HControllerService";
 
-    private static final int SUCCESS = 1;
-    private static final int FAIL_UNKNOWN = -1;
-    private static final int FAIL_GATT_NULL = -2;
-    private static final int FAIL_SERVICE_NULL = -3;
-    private static final int FAIL_CHARACT_NULL = -4;
-    private static final int FAIL_PROPERTY_NULL = -5;
+    public static final int SUCCESS = 1;
+    public static final int FAIL_UNKNOWN = -1;
+    public static final int FAIL_GATT_NULL = -2;
+    public static final int FAIL_SERVICE_NULL = -3;
+    public static final int FAIL_CHARACT_NULL = -4;
+    public static final int FAIL_CHARACT_CANNOT_WRITE = -5;
+    public static final int FAIL_PROPERTY_NULL = -6;
 
     private BluetoothManager mBtManager;
     private BluetoothAdapter mBtAdapter;
@@ -138,26 +139,31 @@ public class HControllerService extends Service{
         return gatt != null ? gatt.getServices() : null;
     }
 
-    public int sendToRemoteService(String addr, String svcUUID, String charUUID, String message) {
+    public int sendToRemoteService(String addr, String svcUUID, String charUUID, byte[] bytes) {
         BluetoothGatt gatt = mConnectedGatts.get(addr);
         if (gatt == null) {
             HUtils.logE(TAG, String.format("send failed for gatt null, [%s, %s, %s, %s]"
-                    , addr, svcUUID, charUUID, message));
+                    , addr, svcUUID, charUUID, HUtils.bytesToHex(bytes)));
             return FAIL_GATT_NULL;
         }
         BluetoothGattService remote = gatt.getService(UUID.fromString(svcUUID));
         if (remote == null) {
             HUtils.logE(TAG, String.format("send failed for remote null, [%s, %s, %s, %s]"
-                    , addr, svcUUID, charUUID, message));
+                    , addr, svcUUID, charUUID, HUtils.bytesToHex(bytes)));
             return FAIL_SERVICE_NULL;
         }
         BluetoothGattCharacteristic charact = remote.getCharacteristic(UUID.fromString(charUUID));
         if (charact == null) {
             HUtils.logE(TAG, String.format("send failed for charact null, [%s, %s, %s, %s]"
-                    , addr, svcUUID, charUUID, message));
+                    , addr, svcUUID, charUUID, HUtils.bytesToHex(bytes)));
             return FAIL_CHARACT_NULL;
         }
-        if (charact.setValue(HUtils.hexToBytes(message))) {
+        if ((charact.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) == 0) {
+            HUtils.logE(TAG, String.format("send failed for charact cannot write, [%s, %s, %s, %s]"
+                    , addr, svcUUID, charUUID, HUtils.bytesToHex(bytes)));
+            return FAIL_CHARACT_CANNOT_WRITE;
+        }
+        if (charact.setValue(bytes) && gatt.writeCharacteristic(charact)) {
             return SUCCESS;
         } else {
             return FAIL_UNKNOWN;
@@ -253,12 +259,20 @@ public class HControllerService extends Service{
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            super.onCharacteristicRead(gatt, characteristic, status);
+            HUtils.logD(TAG, String.format("onCharacteristicRead, device: %s, character: %s, value: %s"
+                    , gatt.getDevice().getAddress(), characteristic.getUuid(), HUtils.bytesToHex(characteristic.getValue())));
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-            super.onCharacteristicChanged(gatt, characteristic);
+            HUtils.logD(TAG, String.format("onCharacteristicChanged, device: %s, character: %s, value: %s"
+                    , gatt.getDevice().getAddress(), characteristic.getUuid(), HUtils.bytesToHex(characteristic.getValue())));
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            HUtils.logD(TAG, String.format("onCharacteristicWrite, device: %s, character: %s, value: %s"
+                    , gatt.getDevice().getAddress(), characteristic.getUuid(), HUtils.bytesToHex(characteristic.getValue())));
         }
     };
 

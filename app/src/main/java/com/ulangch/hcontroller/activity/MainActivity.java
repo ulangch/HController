@@ -26,6 +26,7 @@ import android.text.TextUtils;
 import com.ulangch.hcontroller.R;
 import com.ulangch.hcontroller.model.HBluetoothDevice;
 import com.ulangch.hcontroller.service.HControllerService;
+import com.ulangch.hcontroller.utils.GattAttributes;
 import com.ulangch.hcontroller.utils.HUtils;
 
 import java.util.ArrayList;
@@ -118,15 +119,17 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
     public boolean onPreferenceChange(Preference preference, Object o) {
         String key = preference.getKey();
         if (TextUtils.equals(key, KEY_DEVICE_PARAMETER)) {
-            final String msg = (String) o;
+            validAndSendToRemote((String) o, GattAttributes.UUID_SERVICE_180B, GattAttributes.UUID_CHARACTER_1503, 6);
+            // for test
+            //validAndSendToRemote((String) o, GattAttributes.UUID_TEST_SERVICE_1801, GattAttributes.UUID_TEST_CHARACTER_2A05, 6);
         } else if (TextUtils.equals(key, KEY_ADJUST_STRENGTH)) {
-
+            validAndSendToRemote((String) o, GattAttributes.UUID_SERVICE_180B, GattAttributes.UUID_CHARACTER_1506, 6);
         } else if (TextUtils.equals(key, KEY_SEND_ORDER)) {
-
+            validAndSendToRemote((String) o, GattAttributes.UUID_SERVICE_180C, GattAttributes.UUID_CHARACTER_150A, 4);
         } else if (TextUtils.equals(key, KEY_SENSOR_CONTROL)) {
-
+            validAndSendToRemote((String) o, GattAttributes.UUID_SERVICE_180B, GattAttributes.UUID_CHARACTER_1509, 8);
         } else if (TextUtils.equals(key, KEY_ALLOCATE_SENSOR)) {
-
+            validAndSendToRemote((String) o, GattAttributes.UUID_SERVICE_180C, GattAttributes.UUID_CHARACTER_150C, 12);
         }
         return false;
     }
@@ -147,7 +150,6 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
 
         } else if (HUtils.isAddress(key)) {
             if (mDefaultDevice != null && TextUtils.equals(key, mDefaultDevice.getAddress())) {
-                // HUtils.showWarning(this, R.string.already_default_device);
                 displayRemoteServices(preference, mDefaultDevice);
             } else {
                 selectDefaultDevice(preference, mConnectedDevices.get(key));
@@ -263,6 +265,24 @@ public class MainActivity extends PreferenceActivity implements Preference.OnPre
                 builder.setNegativeButton(android.R.string.cancel, null);
                 builder.show();
             }
+        }
+    }
+
+    private void validAndSendToRemote(String hex, String svcUUID, String charUUID, int length) {
+        if (!TextUtils.isEmpty(hex) && hex.length() == length && HUtils.isHexString(hex)) {
+            if (mDefaultDevice != null) {
+                int result = mHControllerService.sendToRemoteService(
+                        mDefaultDevice.getAddress(), svcUUID, charUUID, HUtils.hexToBytes(hex));
+                if (result == HControllerService.SUCCESS) {
+                    HUtils.showWarning(this, R.string.send_success);
+                } else {
+                    HUtils.showWarning(this, getString(R.string.send_failed) + " CODE: " + result);
+                }
+            } else {
+                HUtils.showWarning(this, R.string.invalid_default_device);
+            }
+        } else {
+            HUtils.showWarning(this, R.string.invalid_text_message);
         }
     }
 

@@ -82,7 +82,7 @@ public class HUtils {
         return new String(buf);
     }
 
-    private static int fromHex(char ch) throws NumberFormatException {
+    public static int fromHex(char ch) throws NumberFormatException {
         if (ch <= '9' && ch >= '0') {
             return ch - '0';
         } else if (ch >= 'a' && ch <= 'f') {
@@ -92,6 +92,18 @@ public class HUtils {
         } else {
             throw new NumberFormatException("Bad hex-character: " + ch);
         }
+    }
+
+    public static boolean isHexString(String hex) {
+        hex = hex.toLowerCase();
+        for (char c : hex.toCharArray()) {
+            if (c <= '9' && c >= '0' || c >= 'a' && c <= 'f') {
+                continue;
+            } else {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static String formatTime(long time) {

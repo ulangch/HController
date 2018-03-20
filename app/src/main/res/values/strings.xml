@@ -32,6 +32,9 @@
     <string name="already_default_device">这个设备已经是默认的通信设备</string>
     <string name="dlg_title_remote_services">可用服务</string>
     <string name="invalid_text_message">不符合要求的数据</string>
+    <string name="invalid_default_device">未选择默认通信设备</string>
+    <string name="send_success">发送成功</string>
+    <string name="send_failed">发送失败</string>
 
     <string name="title_start_scan">开启扫描</string>
     <string name="title_available_devices">可用设备</string>
@@ -39,7 +42,7 @@
     <string name="scan_stopped">扫描已停止</string>
     <string name="connecting">正在连接...</string>
     <string name="disconnecting">正在断开...</string>
-    <string name="connect_success">恭喜，连接成功</string>
+    <string name="connect_success">连接成功</string>
     <string name="connect_failed">连接失败，已断开</string>
 
     <string name="dlg_title_disconnect">断开连接</string>
